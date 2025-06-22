@@ -58,11 +58,11 @@
             {% set imgs = [row['圖片檔名1'], row['圖片檔名2'], row['圖片檔名3']] %}
             {% for url in imgs if url and 'id=' in url %}
               {% set gid = url.split('id=')[-1] %}
-              <img src="https://drive.google.com/thumbnail?id={{ gid }}"
+              <img src="https://drive.google.com/uc?export=view&id={{ gid }}"
                    class="thumbnail"
                    data-bs-toggle="modal"
                    data-bs-target="#imageModal"
-                   data-img="https://drive.google.com/uc?id={{ gid }}"
+                   data-img="https://drive.google.com/uc?export=view&id={{ gid }}"
                    data-title="{{ row['品名'] }}">
             {% endfor %}
           </td>
