@@ -53,9 +53,10 @@
             {% for key in ['圖片檔名1', '圖片檔名2', '圖片檔名3'] %}
               <td>
                 {% if row[key] %}
-                  <a href="/static/photos/{{ row[key] }}" data-lightbox="group{{ loop.index }}" data-title="{{ row['品名'] }}">
-                    <img src="/static/photos/{{ row[key] }}" class="thumbnail" alt="圖片">
+                  <a href="{{ row[key] }}" data-lightbox="group{{ loop.index }}" data-title="{{ row['品名'] }}">
+                    <img src="{{ row[key] }}" class="thumbnail" alt="圖片">
                   </a>
+
                 {% endif %}
               </td>
             {% endfor %}
