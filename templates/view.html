@@ -4,13 +4,11 @@
   <title>瀏覽作品資料</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link href="https://cdn.jsdelivr.net/npm/lightbox2@2.11.4/dist/css/lightbox.min.css" rel="stylesheet">
   <style>
     img.thumbnail {
-      max-width: 100px;
+      max-width: 80px;
       height: auto;
-      margin: 4px;
-      border-radius: 8px;
+      cursor: pointer;
       transition: transform 0.2s;
     }
     img.thumbnail:hover {
@@ -53,10 +51,24 @@
             {% for key in ['圖片檔名1', '圖片檔名2', '圖片檔名3'] %}
               <td>
                 {% if row[key] %}
-                  <a href="{{ row[key] }}" data-lightbox="group{{ loop.index }}" data-title="{{ row['品名'] }}">
-                    <img src="{{ row[key] }}" class="thumbnail" alt="圖片">
-                  </a>
-
+                  {# 將 Google Drive share link 改為嵌入 img #}
+                  {% set drive_id = row[key].split('id=')[-1] %}
+                  <img src="https://drive.google.com/thumbnail?id={{ drive_id }}" class="thumbnail" data-bs-toggle="modal" data-bs-target="#modal{{ loop.index0 }}_{{ loop.parent.loop.index0 }}">
+                  
+                  <!-- Modal 彈窗 -->
+                  <div class="modal fade" id="modal{{ loop.index0 }}_{{ loop.parent.loop.index0 }}" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered modal-lg">
+                      <div class="modal-content">
+                        <div class="modal-header">
+                          <h5 class="modal-title">{{ row['品名'] }} 圖片</h5>
+                          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body text-center">
+                          <img src="https://drive.google.com/uc?id={{ drive_id }}" class="img-fluid">
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 {% endif %}
               </td>
             {% endfor %}
@@ -66,7 +78,7 @@
       </table>
     </div>
   </div>
-  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/lightbox2@2.11.4/dist/js/lightbox.min.js"></script>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
