@@ -28,6 +28,8 @@
       </tr></thead>
       <tbody>
       {% for row in data %}
+        {# 先把外層 index 存起來，避免 loop.parent 炸掉 #}
+        {% set rid = loop.index0 %}
         <tr>
           <td>{{ row['工作室'] }}</td>
           <td>{{ row['品名'] }}</td>
@@ -35,9 +37,8 @@
           <td>
             {% set imgs = [row['圖片檔名1'], row['圖片檔名2'], row['圖片檔名3']] %}
             {% for url in imgs if url %}
-              {# 取出 id= 之後那段，做縮圖 & 大圖 #}
               {% set gid = url.split('id=')[-1] %}
-              {% set mid = 'm' ~ loop.parent.index0 ~ '_' ~ loop.index0 %}
+              {% set mid = 'm' ~ rid ~ '_' ~ loop.index0 %}
               <img src="https://drive.google.com/thumbnail?id={{ gid }}"
                    class="thumbnail"
                    data-bs-toggle="modal"
