@@ -1,64 +1,81 @@
 from flask import Flask, render_template, request, redirect, url_for
 import os
-import gspread
 import json
-from oauth2client.service_account import ServiceAccountCredentials
+import gspread
 from werkzeug.utils import secure_filename
+from google.oauth2 import service_account
+from googleapiclient.discovery import build
+from googleapiclient.http import MediaFileUpload
 
-# Flask 基本設定
+# --- Flask 設定 ---
 app = Flask(__name__)
 UPLOAD_FOLDER = 'static/photos'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
-# ✅ 建立 Google Sheets API 連線（從環境變數）
+# --- Google Sheets + Drive 憑證 ---
 scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-
-# 從 Render 環境變數讀取 credentials.json 的內容
 creds_json_str = os.environ.get("GOOGLE_CREDENTIALS")
-
-# 轉換成 dict 後建立憑證物件
 creds_dict = json.loads(creds_json_str)
-creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
+creds = service_account.Credentials.from_service_account_info(creds_dict, scopes=scope)
 
-client = gspread.authorize(creds)
-sheet = client.open("GKdemage").sheet1  # 預設工作表1
+# Sheets client
+gc = gspread.authorize(creds)
+sheet = gc.open("GKdemage").sheet1
 
-# 🔼 上傳表單頁
+# Drive client
+drive_service = build('drive', 'v3', credentials=creds)
+drive_folder_id = "1sjYzTtnRVi7CjBzBcr00wUe_ysULwASS"
+
+# --- 上傳圖片到 Google Drive ---
+def upload_to_drive(local_path, filename):
+    file_metadata = {'name': filename, 'parents': [drive_folder_id]}
+    media = MediaFileUpload(local_path, resumable=True)
+    file = drive_service.files().create(
+        body=file_metadata, media_body=media, fields='id'
+    ).execute()
+
+    # 設定為公開
+    drive_service.permissions().create(
+        fileId=file['id'], body={'type': 'anyone', 'role': 'reader'}
+    ).execute()
+
+    return f"https://drive.google.com/uc?id={file['id']}"
+
+# --- 上傳頁面 ---
 @app.route('/upload', methods=['GET', 'POST'])
 def upload():
     if request.method == 'POST':
         studio = request.form.get('studio')
         product = request.form.get('product')
         condition = request.form.get('condition')
-        filenames = []
+        image_urls = []
 
         for field in ['photo1', 'photo2', 'photo3']:
             file = request.files.get(field)
             if file and file.filename:
                 filename = secure_filename(file.filename)
-                file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-                filenames.append(filename)
+                local_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                file.save(local_path)
+                url = upload_to_drive(local_path, filename)
+                image_urls.append(url)
             else:
-                filenames.append('')  # 保持欄位空白
+                image_urls.append('')
 
-        # 寫入 Google Sheets
-        sheet.append_row([studio, product, condition] + filenames)
+        sheet.append_row([studio, product, condition] + image_urls)
         return redirect(url_for('view'))
 
     return render_template('upload.html')
 
-# 👁 顯示資料頁
+# --- 顯示頁面 ---
 @app.route('/view', methods=['GET', 'POST'])
 def view():
     data = sheet.get_all_records()
-
     if request.method == 'POST':
         keyword = request.form.get('keyword', '').strip()
         if keyword:
-            data = [row for row in data if any(keyword in str(value) for value in row.values())]
-
+            data = [row for row in data if any(keyword in str(v) for v in row.values())]
     return render_template('view.html', data=data)
 
+# --- 執行 ---
 if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 5000))
-    app.run(debug=False, host='0.0.0.0', port=port)
+    app.run(debug=True)
