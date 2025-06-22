@@ -4,10 +4,7 @@
   <meta charset="utf-8">
   <title>瀏覽作品資料</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-
-  <!-- Bootstrap 5 -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-
   <style>
     img.thumbnail {
       max-width: 80px;
@@ -30,7 +27,7 @@
 <div class="container-fluid">
   <h2 class="mb-4">📖 所有上傳資料</h2>
 
-  <!-- 搜尋列 -->
+  <!-- 搜尋表單 -->
   <form method="POST" class="row g-2 mb-3">
     <div class="col-md-4 col-sm-12">
       <input type="text" name="keyword" placeholder="輸入關鍵字查詢..." class="form-control" value="{{ keyword }}">
@@ -40,7 +37,7 @@
     </div>
   </form>
 
-  <!-- 資料表格 -->
+  <!-- 資料表 -->
   <div class="table-responsive">
     <table class="table table-bordered align-middle">
       <thead class="table-light">
@@ -53,7 +50,6 @@
       </thead>
       <tbody>
       {% for row in data %}
-        {% set rid = loop.index0 %}
         <tr>
           <td>{{ row['工作室'] }}</td>
           <td>{{ row['品名'] }}</td>
@@ -62,24 +58,12 @@
             {% set imgs = [row['圖片檔名1'], row['圖片檔名2'], row['圖片檔名3']] %}
             {% for url in imgs if url and 'id=' in url %}
               {% set gid = url.split('id=')[-1] %}
-              {% set mid = 'modal_' ~ rid ~ '_' ~ loop.index0 %}
-              <img src="https://drive.google.com/thumbnail?id={{ gid }}" class="thumbnail"
-                   data-bs-toggle="modal" data-bs-target="#{{ mid }}">
-
-              <!-- Modal -->
-              <div class="modal fade" id="{{ mid }}" tabindex="-1" aria-labelledby="{{ mid }}Label" aria-hidden="true">
-                <div class="modal-dialog modal-dialog-centered modal-lg">
-                  <div class="modal-content">
-                    <div class="modal-header">
-                      <h5 class="modal-title" id="{{ mid }}Label">{{ row['品名'] }}</h5>
-                      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    <div class="modal-body text-center">
-                      <img src="https://drive.google.com/thumbnail?id={{ gid }}&sz=w2048" class="img-fluid" alt="圖片">
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <img src="https://drive.google.com/thumbnail?id={{ gid }}"
+                   class="thumbnail"
+                   data-bs-toggle="modal"
+                   data-bs-target="#imageModal"
+                   data-img="https://drive.google.com/uc?id={{ gid }}"
+                   data-title="{{ row['品名'] }}">
             {% endfor %}
           </td>
         </tr>
@@ -89,14 +73,32 @@
   </div>
 </div>
 
-<!-- Bootstrap Bundle -->
+<!-- 單一 Modal 結構 -->
+<div class="modal fade" id="imageModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalTitle">圖片預覽</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body text-center">
+        <img id="modalImage" src="" class="img-fluid">
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Bootstrap JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-  document.addEventListener('touchstart', function(event) {
-    if (event.target.closest('.modal')) {
-      event.stopPropagation();
-    }
-  }, { passive: true });
+  const imageModal = document.getElementById('imageModal');
+  imageModal.addEventListener('show.bs.modal', event => {
+    const trigger = event.relatedTarget;
+    const imgSrc = trigger.getAttribute('data-img');
+    const title = trigger.getAttribute('data-title');
+    document.getElementById('modalImage').src = imgSrc;
+    document.getElementById('modalTitle').textContent = title;
+  });
 </script>
 </body>
 </html>
