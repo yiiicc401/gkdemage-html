@@ -3,9 +3,11 @@
 <head>
   <meta charset="utf-8">
   <title>瀏覽作品資料</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
   <!-- Bootstrap 5 -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+
   <style>
     img.thumbnail {
       max-width: 80px;
@@ -13,16 +15,19 @@
       cursor: pointer;
       margin: 4px;
       border-radius: 6px;
-      transition: transform .2s;
+      transition: transform 0.2s;
     }
+
     img.thumbnail:hover {
       transform: scale(1.1);
     }
+
     .table-responsive {
       margin-top: 20px;
     }
+
+    /* 讓大圖在手機也不會被裁切 */
     .modal-body img {
-      max-width: 100%;
       max-height: 80vh;
       object-fit: contain;
     }
@@ -30,70 +35,85 @@
 </head>
 
 <body class="p-4">
-<div class="container-fluid">
-  <h2 class="mb-4">📖 所有上傳資料</h2>
+  <div class="container-fluid">
+    <h2 class="mb-4">📖 所有上傳資料</h2>
 
-  <!-- 搜尋列 -->
-  <form method="POST" class="row g-2 mb-3">
-    <div class="col-md-4 col-sm-12">
-      <input type="text" name="keyword" placeholder="輸入關鍵字查詢..." class="form-control" value="{{ keyword }}">
+    <!-- 🔍 搜尋列 -->
+    <form method="POST" class="row g-2 mb-3">
+      <div class="col-md-4 col-sm-12">
+        <input type="text" name="keyword" placeholder="輸入關鍵字查詢…" class="form-control" value="{{ keyword }}" />
+      </div>
+      <div class="col-auto">
+        <button type="submit" class="btn btn-primary">搜尋</button>
+      </div>
+    </form>
+
+    <!-- 📊 資料表格 -->
+    <div class="table-responsive">
+      <table class="table table-bordered align-middle">
+        <thead class="table-light">
+          <tr>
+            <th>工作室</th>
+            <th>品名</th>
+            <th>商品情況</th>
+            <th>圖片</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in data %}
+          <tr>
+            <td>{{ row['工作室'] }}</td>
+            <td>{{ row['品名'] }}</td>
+            <td>{{ row['商品情況'] }}</td>
+            <td>
+              {# 將三個圖片欄位合併處理，只保留含 id 的 Google Drive URL #}
+              {% set imgs = [row['圖片檔名1'], row['圖片檔名2'], row['圖片檔名3']] %}
+              {% for url in imgs if url and 'id=' in url %}
+                {% set gid = url.split('id=')[-1] %}
+                <img src="https://drive.google.com/thumbnail?id={{ gid }}" class="thumbnail" data-gid="{{ gid }}" data-title="{{ row['品名'] }}" onclick="openModal(this)" />
+              {% endfor %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
     </div>
-    <div class="col-auto">
-      <button type="submit" class="btn btn-primary">搜尋</button>
-    </div>
-  </form>
-
-  <!-- 資料表格 -->
-  <div class="table-responsive">
-    <table class="table table-bordered align-middle">
-      <thead class="table-light">
-        <tr>
-          <th>工作室</th>
-          <th>品名</th>
-          <th>商品情況</th>
-          <th>圖片</th>
-        </tr>
-      </thead>
-      <tbody>
-      {% for row in data %}
-        {% set rid = loop.index0 %}
-        <tr>
-          <td>{{ row['工作室'] }}</td>
-          <td>{{ row['品名'] }}</td>
-          <td>{{ row['商品情況'] }}</td>
-          <td>
-            {% set imgs = [row['圖片檔名1'], row['圖片檔名2'], row['圖片檔名3']] %}
-            {% for url in imgs if url and 'id=' in url %}
-              {% set gid = url.split('id=')[-1] %}
-              {% set mid = 'modal_' ~ rid ~ '_' ~ loop.index0 %}
-              <img src="https://drive.google.com/thumbnail?id={{ gid }}" class="thumbnail"
-                   data-bs-toggle="modal" data-bs-target="#{{ mid }}">
-
-              <!-- Modal -->
-              <div class="modal fade" id="{{ mid }}" tabindex="-1" aria-labelledby="{{ mid }}Label" aria-hidden="true">
-                <div class="modal-dialog modal-dialog-centered">
-                  <div class="modal-content">
-                    <div class="modal-header">
-                      <h5 class="modal-title" id="{{ mid }}Label">{{ row['品名'] }}</h5>
-                      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    <div class="modal-body text-center">
-                      <img src="https://drive.google.com/uc?id={{ gid }}&export=view"
-                           class="img-fluid" alt="圖片">
-                    </div>
-                  </div>
-                </div>
-              </div>
-            {% endfor %}
-          </td>
-        </tr>
-      {% endfor %}
-      </tbody>
-    </table>
   </div>
-</div>
 
-<!-- Bootstrap JS -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- 單一 Modal：點擊縮圖後動態置換內容 -->
+  <div class="modal fade" id="imageModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="imageModalLabel"></h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body text-center">
+          <img id="modalImg" src="" class="img-fluid" alt="圖片" />
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bootstrap 5 bundle (含 Popper) -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+  <!-- 自訂 JS：動態開啟 Modal -->
+  <script>
+    function openModal(el) {
+      const gid = el.dataset.gid;
+      const title = el.dataset.title;
+
+      const modalImg = document.getElementById('modalImg');
+      const modalTitle = document.getElementById('imageModalLabel');
+
+      // 使用 uc?id=&export=view 比 thumbnail 解析度高，且能正常顯示
+      modalImg.src = `https://drive.google.com/uc?id=${gid}&export=view`;
+      modalTitle.textContent = title;
+
+      const bsModal = bootstrap.Modal.getOrCreateInstance(document.getElementById('imageModal'));
+      bsModal.show();
+    }
+  </script>
 </body>
 </html>
