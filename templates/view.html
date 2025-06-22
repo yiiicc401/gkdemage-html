@@ -1,49 +1,76 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-Hant">
 <head>
+  <meta charset="utf-8">
   <title>瀏覽作品資料</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <!-- Bootstrap 5 -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
   <style>
-    img.thumbnail{max-width:80px;height:auto;cursor:pointer;margin:4px;border-radius:6px;transition:transform .2s}
+    img.thumbnail{
+      max-width:80px;
+      height:auto;
+      cursor:pointer;
+      margin:4px;
+      border-radius:6px;
+      transition:transform .2s
+    }
     img.thumbnail:hover{transform:scale(1.1)}
     .table-responsive{margin-top:20px}
   </style>
 </head>
+
 <body class="p-4">
 <div class="container-fluid">
   <h2 class="mb-4">📖 所有上傳資料</h2>
 
+  <!-- 關鍵字搜尋 -->
   <form method="POST" class="row g-2 mb-3">
     <div class="col-md-4 col-sm-12">
-      <input type="text" name="keyword" placeholder="輸入關鍵字查詢..." class="form-control" value="{{ keyword }}">
+      <input type="text"
+             name="keyword"
+             placeholder="輸入關鍵字查詢..."
+             class="form-control"
+             value="{{ keyword }}">
     </div>
-    <div class="col-auto"><button type="submit" class="btn btn-primary">搜尋</button></div>
+    <div class="col-auto">
+      <button type="submit" class="btn btn-primary">搜尋</button>
+    </div>
   </form>
 
+  <!-- 資料表 -->
   <div class="table-responsive">
     <table class="table table-bordered align-middle">
-      <thead class="table-light"><tr>
-        <th>工作室</th><th>品名</th><th>商品情況</th><th>圖片</th>
-      </tr></thead>
+      <thead class="table-light">
+        <tr>
+          <th>工作室</th>
+          <th>品名</th>
+          <th>商品情況</th>
+          <th>圖片</th>
+        </tr>
+      </thead>
       <tbody>
       {% for row in data %}
-        {# 先把外層 index 存起來，避免 loop.parent 炸掉 #}
         {% set rid = loop.index0 %}
         <tr>
           <td>{{ row['工作室'] }}</td>
           <td>{{ row['品名'] }}</td>
           <td>{{ row['商品情況'] }}</td>
+
+          <!-- 只顯示有網址的圖片 -->
           <td>
             {% set imgs = [row['圖片檔名1'], row['圖片檔名2'], row['圖片檔名3']] %}
-            {% for url in imgs if url %}
+            {% for url in imgs if url and 'id=' in url %}
               {% set gid = url.split('id=')[-1] %}
               {% set mid = 'm' ~ rid ~ '_' ~ loop.index0 %}
               <img src="https://drive.google.com/thumbnail?id={{ gid }}"
                    class="thumbnail"
                    data-bs-toggle="modal"
                    data-bs-target="#{{ mid }}">
-              <!-- Modal -->
+
+              <!-- Bootstrap Modal -->
               <div class="modal fade" id="{{ mid }}" tabindex="-1" aria-hidden="true">
                 <div class="modal-dialog modal-dialog-centered modal-lg">
                   <div class="modal-content">
@@ -66,6 +93,7 @@
   </div>
 </div>
 
+<!-- Bootstrap JS (含 Popper) -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
